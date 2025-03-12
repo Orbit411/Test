@@ -1,0 +1,77 @@
+.hero-container {
+  position: relative;
+  width: 100%;
+  height: 100vh; /* ارتفاع الشاشة بالكامل */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  background-attachment: fixed;
+}
+
+.hero-image {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* يجعل الصورة تغطي العنصر بالكامل بدون تشويه */
+  z-index: -1; /* يرسل الصورة للخلف حتى لا تغطي المحتوى */
+}
+
+.hero-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  color: white;
+  text-align: center;
+  z-index: 1;
+  background-color: rgba(0, 0, 0, 0.559);
+  width: 100%;
+  height: 100vh;
+}
+
+.hero-content:hover {
+  transform: scale(1.05); /* تكبير النص عند المرور عليه */
+}
+
+.hero-content h1 {
+  font-size: 5rem;
+  margin-bottom: 10px;
+width: max-content;
+  text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.7); /* إضافة تأثير الظلال للنص */
+}
+
+.hero-content p {
+  font-size: 1.2rem;
+  margin-top: 0;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7); /* إضافة تأثير الظلال للنص */
+}
+
+/* تحسين التنسيق للأجهزة الصغيرة */
+/* @media (max-width: 768px) {
+  .hero-content h1 {
+    font-size: 2rem;
+  }
+
+  .hero-content p {
+    font-size: 1rem;
+  }
+} */
+.typing-text {
+  font-size: 32px;
+  font-family: monospace;
+  white-space: nowrap;
+}
+
+.cursor {
+  font-weight: bold;
+  margin-left: 5px;
+  animation: blink 0.8s infinite;
+}
+
+@keyframes blink {
+  0% { opacity: 1; }
+  50% { opacity: 0; }
+  100% { opacity: 1; }
+}
