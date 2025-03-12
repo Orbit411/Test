@@ -29,7 +29,7 @@ const HeroSection = () => {
       borderRadius: "0% 0% 0% 0%",
       ease: "power1.inOut",
       scrollTrigger: {
-        trigger: ".hero-containergit init",
+        trigger: ".hero-container",
         start: "center center",
         end: "bottom center",
         scrub: true,
