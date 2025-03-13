@@ -14,17 +14,17 @@ function Check() {
   const [isModelLoaded, setIsModelLoaded] = useState(false);
   const checkRef = useRef(null);
 
-  // تحميل النموذج المحفوظ أو تدريبه إذا لم يكن موجودًا
+  // Load the model or train it if it doesn't exist
   useEffect(() => {
     const loadOrTrainModel = async () => {
       try {
-        // محاولة تحميل النموذج من التخزين المحلي
+        // Attempt to load the model from local storage
         const loadedModel = await tf.loadLayersModel("localstorage://sonar-model");
         setModel(loadedModel);
         setIsModelLoaded(true);
-        console.log("Model Loaded from Storage!");
+        console.log("Model loaded from storage!");
       } catch (error) {
-        console.log("No saved model found, training a new one...");
+        console.log("No saved model found, training a new model...");
         trainModel();
       }
     };
@@ -37,39 +37,49 @@ function Check() {
             header: false,
             dynamicTyping: true,
             complete: async (result) => {
-              const csvData = result.data.filter((row) => row.length === 61); // تصفية الصفوف غير الصالحة
+              const csvData = result.data.filter((row) => row.length === 61); // Filter out invalid rows
               const inputs = csvData.map((row) => row.slice(0, 60));
               const labels = csvData.map((row) => (row[60] === "R" ? 0 : 1));
 
               const inputTensor = tf.tensor2d(inputs);
               const labelTensor = tf.tensor1d(labels, "int32");
 
-              // نموذج أكثر تعقيدًا لتحسين الدقة
+              // Enhanced model with deeper layers
               const model = tf.sequential();
-              model.add(tf.layers.dense({ units: 64, activation: "relu", inputShape: [60] })); // طبقة مخفية أولى
-              model.add(tf.layers.dropout({ rate: 0.2 })); // Dropout لتقليل Overfitting
-              model.add(tf.layers.dense({ units: 32, activation: "relu" })); // طبقة مخفية ثانية
-              model.add(tf.layers.dropout({ rate: 0.2 })); // Dropout إضافي
-              model.add(tf.layers.dense({ units: 1, activation: "sigmoid" })); // طبقة إخراج
+              model.add(tf.layers.dense({ units: 128, activation: "relu", inputShape: [60] })); // Larger first hidden layer
+              model.add(tf.layers.dropout({ rate: 0.3 })); // Dropout to reduce overfitting
+              model.add(tf.layers.dense({ units: 64, activation: "relu" })); // Second hidden layer
+              model.add(tf.layers.dropout({ rate: 0.3 }));
+              model.add(tf.layers.dense({ units: 32, activation: "relu" })); // Third hidden layer
+              model.add(tf.layers.dense({ units: 1, activation: "sigmoid" })); // Output layer
 
               model.compile({
-                optimizer: "adam", // استخدام مُحسّن Adam
+                optimizer: "adam", // Adam optimizer
                 loss: "binaryCrossentropy",
                 metrics: ["accuracy"],
               });
 
-              // تدريب النموذج مع عدد أكبر من العصور
-              model.fit(inputTensor, labelTensor, { epochs: 10, verbose: 1 }).then(async () => {
-                await model.save("localstorage://sonar-model"); // حفظ النموذج
+              // Train the model with more epochs and validation
+              model.fit(inputTensor, labelTensor, {
+                epochs: 50, // Increased epochs for better learning
+                validationSplit: 0.2, // 20% of data for validation
+                verbose: 1,
+              }).then(async () => {
+                await model.save("localstorage://sonar-model"); // Save the model
                 setModel(model);
                 setIsModelLoaded(true);
-                console.log("Model Trained and Saved!");
+              
+
+                // Manual test for the first row (Rock)
+                const testInput = tf.tensor2d([inputs[0]]);
+                const pred = model.predict(testInput).dataSync()[0];
+                
               });
             },
           });
         })
         .catch((err) => {
-          console.error("Error fetching CSV:", err);
+        
           Swal.fire({ title: "Error loading data!", icon: "error" });
         });
     };
@@ -84,22 +94,22 @@ function Check() {
       .split(",")
       .map((value) => parseFloat(value.trim()))
       .filter((value) => !isNaN(value));
-  
+
     if (userValues.length !== 60) {
-      Swal.fire({ title: "Please Enter 60 values separated by (,)", icon: "error" });
+      Swal.fire({ title: "Please enter 60 values separated by commas", icon: "error" });
       return;
     }
-  
+
     if (model && isModelLoaded) {
       const inputTensor = tf.tensor2d([userValues]);
       const prediction = model.predict(inputTensor).dataSync()[0];
-      console.log("Prediction value:", prediction);
+  
       Swal.fire({
-        title: prediction < 0.5 ? "This is Rock" : "This is Mine, Be careful!",
-        icon: prediction < 0.5 ? "success" : "warning",
+        title: `${prediction < 0.6 ? "This is Rock" : "This is Mine, Be careful!"} `,
+        icon: prediction < 0.6 ? "success" : "warning",
       });
     } else {
-      Swal.fire({ title: "Model is still loading!", icon: "warning" });
+      Swal.fire({ title: "The model is still loading!", icon: "warning" });
     }
   };
 
@@ -127,11 +137,11 @@ function Check() {
     <>
       <div id="check" className="check" ref={checkRef}>
         <h1>Enter Coordinates</h1>
-        <p>For Safety Check Coordinates</p>
+        <p>To check the safety of the coordinates</p>
         <div className="input-container">
           <input
             type="text"
-            placeholder="Enter 60 values separated by (,) and press Predict"
+            placeholder="Enter 60 values separated by commas, then press Predict"
             value={inputValues}
             onChange={handleInputChange}
           />
