@@ -37,9 +37,7 @@
   letter-spacing: 3px;
 }
 
-.nav-links li a:hover {
-  color: blue;
-}
+
 @media(max-width:600px){
     .navbar {
         width: 100%;
