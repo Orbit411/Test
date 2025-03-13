@@ -5,7 +5,10 @@ import { useWindowScroll } from "react-use";
 import { useGSAP } from "@gsap/react";
 const Navbar = () => {
   const [isNavVisible, setIsNavVisible] = useState(true);
+  const [color, setcolor] = useState(true);
   const navContainerRef=useRef(null)
+  const navLinksRef = useRef(null);
+
   const [lastScrollY, setLastScrollY] = useState(0);
   
   const { y: currentScrollY } = useWindowScroll();
@@ -14,12 +17,19 @@ const Navbar = () => {
     if (currentScrollY === 0) {
       setIsNavVisible(true);
       navContainerRef.current.classList.remove("floating-nav");
+      // إزالة الكلاس "changecolor" عندما يعود التمرير إلى أعلى
+      
+  setcolor(false)
     } else if (currentScrollY > lastScrollY) {
       setIsNavVisible(false);
       navContainerRef.current.classList.add("floating-nav");
+      // إضافة الكلاس "changecolor" عندما نمر لأسفل
+      setcolor(true)
     } else if (currentScrollY < lastScrollY) {
       setIsNavVisible(true);
       navContainerRef.current.classList.add("floating-nav");
+      // إضافة الكلاس "changecolor" عندما نمر لأعلى
+      setcolor(true)
     }
 
     setLastScrollY(currentScrollY);
@@ -41,15 +51,15 @@ const Navbar = () => {
 
   return (
     <nav ref={navContainerRef} className="navbar">
-      <ul className="nav-links">
+      <ul className="nav-links" ref={navLinksRef}>
         <li>
-          <a href="#home">About</a>
+          <a  style={{ color:!color? "black":"white" }}  href="#home">About</a>
         </li>
         <li>
-          <a href="#about">Cards</a>
+          <a style={{ color:!color? "black":"white" }} href="#about">Cards</a>
         </li>
         <li>
-          <a href="#contact">Check</a>
+          <a  style={{ color:!color? "black":"white" }} href="#contact">Check</a>
         </li>
       </ul>
     </nav>

@@ -45,6 +45,17 @@ input {
   input:hover{
       cursor: pointer;
   }
+  @media(max-width:520px){
+    .check h1{
+      margin: 10px 0;
+      font-size:3rem;
+  }
+  input{
+    font-size: 1rem;
+  }
+
+
+  }
 
 
 

@@ -75,3 +75,12 @@ width: max-content;
   50% { opacity: 0; }
   100% { opacity: 1; }
 }
+@media (max-width:700px) {
+  .hero-content h1{
+    font-size: 3rem;
+  }
+  .hero-content p{
+    font-size: 1rem;
+  }
+  
+}

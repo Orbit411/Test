@@ -4,11 +4,12 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { MdDangerous, MdHealthAndSafety } from "react-icons/md";
 import Papa from 'papaparse';
+import Swal from 'sweetalert2';  // استيراد SweetAlert2
+
 // تسجيل ScrollTrigger مع GSAP
 gsap.registerPlugin(ScrollTrigger);
 
 function Check() {
-
   const [inputValues, setInputValues] = useState('');
   const [prediction, setPrediction] = useState('');
   const [colorresult, setcolorresult] = useState();
@@ -42,16 +43,15 @@ function Check() {
           trigger: checkRef.current,
           start: "top 80%", // يبدأ عند وصوله إلى 80% من الشاشة
           toggleActions: "play none none reverse", // يعمل عند الدخول ويتراجع عند الخروج
-         // استخدمها لاختبار النقاط (يمكن حذفها بعد التحقق)
         },
       }
     );
   }, []);
 
-
   const handleInputChange = (e) => {
     setInputValues(e.target.value);
   };
+
   const handlePredict = () => {
     const userValues = inputValues
       .split(',')
@@ -64,7 +64,16 @@ function Check() {
       .filter((value) => !isNaN(value));
 
     if (userValues.length !== 60) {
-      alert('الرجاء إدخال 60 قيمة مفصولة بفواصل.');
+      Swal.fire({
+        title: "Please Enter 60 values separated by (,)!", // رسالتك عند وجود خطأ
+        icon: 'error', // أيقونة الخطأ
+        showClass: {
+          popup: 'animate__animated animate__fadeInUp animate__faster',
+        },
+        hideClass: {
+          popup: 'animate__animated animate__fadeOutDown animate__faster',
+        },
+      });
       return;
     }
 
@@ -76,12 +85,11 @@ function Check() {
     if (match) {
       const result = match[60]; // Last column (R or M)
       setPrediction(result === 'R' ? 'This is Rock' : 'This is Mine Be careful');
-      setcolorresult(result === 'R' ? '#ffff' : 'red')
+      setcolorresult(result === 'R' ? '#ffff' : 'red');
     } else {
       setPrediction('Enter Valid Data ');
     }
   };
-
 
   return (
     <>
@@ -91,18 +99,22 @@ function Check() {
         <div className="input-container">
           <input
             type="text"
-            placeholder="Enter 60 values separated by (,)"
+            placeholder="Enter 60 values separated by (,) and press Predict"
             onChange={handleInputChange}
           />
         </div>
-      {prediction && (  <p style={{ fontSize:"1.5rem",fontWeight:"600",margin:"10px 0", color:`${colorresult}` }}> {colorresult=="red" ?<MdDangerous /> :<MdHealthAndSafety />} {prediction}</p>)}
+        {prediction && (
+          <p style={{ fontSize: "1.5rem", fontWeight: "600", margin: "10px 0", color: `${colorresult}` }}>
+            {colorresult === "red" ? <MdDangerous /> : <MdHealthAndSafety />} {prediction}
+          </p>
+        )}
         <button onClick={handlePredict} className="btn-17">
           <span className="text-container">
             <span className="text">Predict</span>
           </span>
         </button>
       </div>
-      
+
       {/* SVG Background */}
       <svg
         width="100%"
