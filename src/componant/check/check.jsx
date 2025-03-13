@@ -93,7 +93,7 @@ function Check() {
 
   return (
     <>
-      <div className="check" ref={checkRef}>
+      <div id="check" className="check" ref={checkRef}>
         <h1>Enter coordinates</h1>
         <p>for safety Check coordinates</p>
         <div className="input-container">

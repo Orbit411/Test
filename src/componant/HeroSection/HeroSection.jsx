@@ -38,7 +38,7 @@ const HeroSection = () => {
   })
 
   return (
-    <div className="hero-container">
+    <div id="home" className="hero-container">
       <img src={myImage} alt="Sonar" className="hero-image" />
       <div className="hero-content">
         <h1 className="typing-text">

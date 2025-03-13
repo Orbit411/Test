@@ -53,13 +53,13 @@ const Navbar = () => {
     <nav ref={navContainerRef} className="navbar">
       <ul className="nav-links" ref={navLinksRef}>
         <li>
-          <a  style={{ color:!color? "black":"white" }}  href="#home">About</a>
+          <a  style={{ color:!color? "black":"white" }}  href="#about">About</a>
         </li>
         <li>
-          <a style={{ color:!color? "black":"white" }} href="#about">Cards</a>
+          <a style={{ color:!color? "black":"white" }} href="#inf">Cards</a>
         </li>
         <li>
-          <a  style={{ color:!color? "black":"white" }} href="#contact">Check</a>
+          <a  style={{ color:!color? "black":"white" }} href="#check">Check</a>
         </li>
       </ul>
     </nav>

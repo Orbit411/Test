@@ -64,7 +64,7 @@ const Card = () => {
 
 
   return (
-    <div className="card-container">
+    <div id="inf" className="card-container">
       <div className="card" ref={card1Ref}>
         <img src={image1} alt="" className="card-image" ref={imageRef} />
         <div className="card-content">
