@@ -12,6 +12,7 @@
   "dependencies": {
     "@gsap/react": "^2.1.2",
     "gsap": "^3.12.7",
+    "ldrs": "^1.1.2",
     "lottie-react": "^2.4.1",
     "papaparse": "^5.5.2",
     "react": "^18.3.1",
