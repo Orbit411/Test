@@ -86,7 +86,7 @@ const AboutUs = () => {
   }, []);
 
   return (
-    <div className="about-container" ref={aboutContainerRef}>
+    <div id="about" className="about-container" ref={aboutContainerRef}>
       <video
         autoPlay
         loop
