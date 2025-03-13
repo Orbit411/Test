@@ -2,161 +2,146 @@ import React, { useEffect, useRef, useState } from "react";
 import "./check.css";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { MdDangerous, MdHealthAndSafety } from "react-icons/md";
-import Papa from 'papaparse';
-import Swal from 'sweetalert2';  // استيراد SweetAlert2
-import { CiWarning } from "react-icons/ci"; // استيراد أيقونة التحذير
+import Papa from "papaparse";
+import Swal from "sweetalert2";
+import * as tf from "@tensorflow/tfjs";
 
-// تسجيل ScrollTrigger مع GSAP
 gsap.registerPlugin(ScrollTrigger);
 
 function Check() {
-  const [inputValues, setInputValues] = useState('');
-
-  const [csvData, setCsvData] = useState([]);
+  const [inputValues, setInputValues] = useState("");
+  const [model, setModel] = useState(null);
+  const [isModelLoaded, setIsModelLoaded] = useState(false);
   const checkRef = useRef(null);
 
+  // تحميل النموذج المحفوظ أو تدريبه إذا لم يكن موجودًا
   useEffect(() => {
-    fetch('/Copy of sonar data (1).csv') 
-      .then((response) => response.text())
-      .then((data) => {
-        Papa.parse(data, {
-          header: false,
-          dynamicTyping: true,
-          complete: (result) => {
-            setCsvData(result.data);
-          },
-        });
-      });
-  }, []);
-
-  useEffect(() => {
-    gsap.fromTo(
-      checkRef.current,
-      { scale: 0.7, opacity: 0 }, // يبدأ صغير وغير مرئي
-      {
-        scale: 1,
-        opacity: 1,
-        duration: 2,
-        ease: "elastic.out(1, 0.5)", // تأثير متذبذب
-        scrollTrigger: {
-          trigger: checkRef.current,
-          start: "top 80%", // يبدأ عند وصوله إلى 80% من الشاشة
-          toggleActions: "play none none reverse", // يعمل عند الدخول ويتراجع عند الخروج
-        },
+    const loadOrTrainModel = async () => {
+      try {
+        // محاولة تحميل النموذج من التخزين المحلي
+        const loadedModel = await tf.loadLayersModel("localstorage://sonar-model");
+        setModel(loadedModel);
+        setIsModelLoaded(true);
+        console.log("Model Loaded from Storage!");
+      } catch (error) {
+        console.log("No saved model found, training a new one...");
+        trainModel();
       }
-    );
+    };
+
+    const trainModel = () => {
+      fetch("/Copy of sonar data (1).csv")
+        .then((response) => response.text())
+        .then((data) => {
+          Papa.parse(data, {
+            header: false,
+            dynamicTyping: true,
+            complete: async (result) => {
+              const csvData = result.data.filter((row) => row.length === 61); // تصفية الصفوف غير الصالحة
+              const inputs = csvData.map((row) => row.slice(0, 60));
+              const labels = csvData.map((row) => (row[60] === "R" ? 0 : 1));
+
+              const inputTensor = tf.tensor2d(inputs);
+              const labelTensor = tf.tensor1d(labels, "int32");
+
+              // نموذج أكثر تعقيدًا لتحسين الدقة
+              const model = tf.sequential();
+              model.add(tf.layers.dense({ units: 64, activation: "relu", inputShape: [60] })); // طبقة مخفية أولى
+              model.add(tf.layers.dropout({ rate: 0.2 })); // Dropout لتقليل Overfitting
+              model.add(tf.layers.dense({ units: 32, activation: "relu" })); // طبقة مخفية ثانية
+              model.add(tf.layers.dropout({ rate: 0.2 })); // Dropout إضافي
+              model.add(tf.layers.dense({ units: 1, activation: "sigmoid" })); // طبقة إخراج
+
+              model.compile({
+                optimizer: "adam", // استخدام مُحسّن Adam
+                loss: "binaryCrossentropy",
+                metrics: ["accuracy"],
+              });
+
+              // تدريب النموذج مع عدد أكبر من العصور
+              model.fit(inputTensor, labelTensor, { epochs: 10, verbose: 1 }).then(async () => {
+                await model.save("localstorage://sonar-model"); // حفظ النموذج
+                setModel(model);
+                setIsModelLoaded(true);
+                console.log("Model Trained and Saved!");
+              });
+            },
+          });
+        })
+        .catch((err) => {
+          console.error("Error fetching CSV:", err);
+          Swal.fire({ title: "Error loading data!", icon: "error" });
+        });
+    };
+
+    loadOrTrainModel();
   }, []);
 
-  const handleInputChange = (e) => {
-    setInputValues(e.target.value);
-  };
+  const handleInputChange = (e) => setInputValues(e.target.value);
 
-  const handlePredict = () => {
+  const handlePredict = async () => {
     const userValues = inputValues
-      .split(',')
-      .map((value) => value.trim())
-      .map((value) => {
-        const trimmedValue = value.replace(/\s+/g, '');
-        const parsedValue = parseFloat(trimmedValue);
-        return isNaN(parsedValue) ? NaN : parsedValue;
-      })
+      .split(",")
+      .map((value) => parseFloat(value.trim()))
       .filter((value) => !isNaN(value));
-
+  
     if (userValues.length !== 60) {
-      Swal.fire({
-        title: "Please Enter 60 values separated by (,)!", // رسالتك عند وجود خطأ
-        icon: 'error', // أيقونة الخطأ
-        showClass: {
-          popup: 'animate__animated animate__fadeInUp animate__faster',
-        },
-        hideClass: {
-          popup: 'animate__animated animate__fadeOutDown animate__faster',
-        },
-      });
+      Swal.fire({ title: "Please Enter 60 values separated by (,)", icon: "error" });
       return;
     }
-
-    const match = csvData.find((row) => {
-      const rowValues = row.slice(0, 60).map((value) => parseFloat(value));
-      return JSON.stringify(rowValues) === JSON.stringify(userValues);
-    });
-
-    if (match) {
-      const result = match[60]; // Last column (R or M)
-      // setPrediction(result === 'R' ? 'This is Rock' : 'This is Mine Be careful');
-      // setcolorresult(result === 'R' ? '#ffff' : 'red');
-
-      if(result === 'R'){
-        Swal.fire({
-          title: "This is Rock", // رسالتك عند وجود خطأ
-          icon: 'success', // أيقونة الخطأ
-          showClass: {
-            popup: 'animate__animated animate__fadeInUp animate__faster',
-          },
-          hideClass: {
-            popup: 'animate__animated animate__fadeOutDown animate__faster',
-          },
-        });
-        return;
-      
   
-      }else{
-        Swal.fire({
-          title: "This is Mine Be careful", // رسالتك عند وجود خطأ
-      // عرض أيقونة التحذير
-          icon: 'warning', // أيقونة التحذير // أيقونة الخطأ
-          showClass: {
-            popup: 'animate__animated animate__fadeInUp animate__faster',
-          },
-          hideClass: {
-            popup: 'animate__animated animate__fadeOutDown animate__faster',
-          },
-        });
-        return;
-
-      }
-      
-    } else {
+    if (model && isModelLoaded) {
+      const inputTensor = tf.tensor2d([userValues]);
+      const prediction = model.predict(inputTensor).dataSync()[0];
+      console.log("Prediction value:", prediction);
       Swal.fire({
-        title: "Enter Valid Data!", // رسالتك عند وجود خطأ
-        icon: 'error', // أيقونة الخطأ
-        showClass: {
-          popup: 'animate__animated animate__fadeInUp animate__faster',
-        },
-        hideClass: {
-          popup: 'animate__animated animate__fadeOutDown animate__faster',
-        },
+        title: prediction < 0.5 ? "This is Rock" : "This is Mine, Be careful!",
+        icon: prediction < 0.5 ? "success" : "warning",
       });
-      return;
+    } else {
+      Swal.fire({ title: "Model is still loading!", icon: "warning" });
     }
   };
+
+  useEffect(() => {
+    if (isModelLoaded) {
+      gsap.fromTo(
+        checkRef.current,
+        { scale: 0.7, opacity: 0 },
+        {
+          scale: 1,
+          opacity: 1,
+          duration: 2,
+          ease: "elastic.out(1, 0.5)",
+          scrollTrigger: {
+            trigger: checkRef.current,
+            start: "top 80%",
+            toggleActions: "play none none reverse",
+          },
+        }
+      );
+    }
+  }, [isModelLoaded]);
 
   return (
     <>
       <div id="check" className="check" ref={checkRef}>
-        <h1>Enter coordinates</h1>
-        <p>for safety Check coordinates</p>
+        <h1>Enter Coordinates</h1>
+        <p>For Safety Check Coordinates</p>
         <div className="input-container">
           <input
             type="text"
             placeholder="Enter 60 values separated by (,) and press Predict"
+            value={inputValues}
             onChange={handleInputChange}
           />
         </div>
-        {/* {prediction && (
-          <p style={{ fontSize: "1.5rem", fontWeight: "600", margin: "10px 0", color: `${colorresult}` }}>
-            {colorresult === "red" ? <MdDangerous /> : <MdHealthAndSafety />} {prediction}
-          </p>
-        )} */}
-        <button onClick={handlePredict} className="btn-17">
+        <button onClick={handlePredict} className="btn-17" disabled={!isModelLoaded}>
           <span className="text-container">
-            <span className="text">Predict</span>
+            <span className="text">{isModelLoaded ? "Predict" : "Loading..."}</span>
           </span>
         </button>
       </div>
-
-      {/* SVG Background */}
       <svg
         width="100%"
         height="100%"

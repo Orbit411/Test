@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
+    "@tensorflow/tfjs": "^4.22.0",
+    "axios": "^1.8.3",
     "gsap": "^3.12.7",
     "ldrs": "^1.1.2",
     "lottie-react": "^2.4.1",
