@@ -5,14 +5,14 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { MdDangerous, MdHealthAndSafety } from "react-icons/md";
 import Papa from 'papaparse';
 import Swal from 'sweetalert2';  // استيراد SweetAlert2
+import { CiWarning } from "react-icons/ci"; // استيراد أيقونة التحذير
 
 // تسجيل ScrollTrigger مع GSAP
 gsap.registerPlugin(ScrollTrigger);
 
 function Check() {
   const [inputValues, setInputValues] = useState('');
-  const [prediction, setPrediction] = useState('');
-  const [colorresult, setcolorresult] = useState();
+
   const [csvData, setCsvData] = useState([]);
   const checkRef = useRef(null);
 
@@ -84,10 +84,51 @@ function Check() {
 
     if (match) {
       const result = match[60]; // Last column (R or M)
-      setPrediction(result === 'R' ? 'This is Rock' : 'This is Mine Be careful');
-      setcolorresult(result === 'R' ? '#ffff' : 'red');
+      // setPrediction(result === 'R' ? 'This is Rock' : 'This is Mine Be careful');
+      // setcolorresult(result === 'R' ? '#ffff' : 'red');
+
+      if(result === 'R'){
+        Swal.fire({
+          title: "This is Rock", // رسالتك عند وجود خطأ
+          icon: 'success', // أيقونة الخطأ
+          showClass: {
+            popup: 'animate__animated animate__fadeInUp animate__faster',
+          },
+          hideClass: {
+            popup: 'animate__animated animate__fadeOutDown animate__faster',
+          },
+        });
+        return;
+      
+  
+      }else{
+        Swal.fire({
+          title: "This is Mine Be careful", // رسالتك عند وجود خطأ
+      // عرض أيقونة التحذير
+          icon: 'warning', // أيقونة التحذير // أيقونة الخطأ
+          showClass: {
+            popup: 'animate__animated animate__fadeInUp animate__faster',
+          },
+          hideClass: {
+            popup: 'animate__animated animate__fadeOutDown animate__faster',
+          },
+        });
+        return;
+
+      }
+      
     } else {
-      setPrediction('Enter Valid Data ');
+      Swal.fire({
+        title: "Enter Valid Data!", // رسالتك عند وجود خطأ
+        icon: 'error', // أيقونة الخطأ
+        showClass: {
+          popup: 'animate__animated animate__fadeInUp animate__faster',
+        },
+        hideClass: {
+          popup: 'animate__animated animate__fadeOutDown animate__faster',
+        },
+      });
+      return;
     }
   };
 
@@ -103,11 +144,11 @@ function Check() {
             onChange={handleInputChange}
           />
         </div>
-        {prediction && (
+        {/* {prediction && (
           <p style={{ fontSize: "1.5rem", fontWeight: "600", margin: "10px 0", color: `${colorresult}` }}>
             {colorresult === "red" ? <MdDangerous /> : <MdHealthAndSafety />} {prediction}
           </p>
-        )}
+        )} */}
         <button onClick={handlePredict} className="btn-17">
           <span className="text-container">
             <span className="text">Predict</span>
