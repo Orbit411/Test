@@ -28,7 +28,7 @@ const Card = () => {
           trigger: card1Ref.current,
           start: "top 80%",
           end: "top 20%",
-          toggleActions: "play reverse play reverse",
+          toggleActions: "play none none reverse",
         },
       }
     );
@@ -46,7 +46,7 @@ const Card = () => {
           trigger: card2Ref.current,
           start: "top 80%",
           end: "top 20%",
-          toggleActions: "play reverse play reverse",
+          toggleActions: "play none none reverse",
         },
       }
     );
