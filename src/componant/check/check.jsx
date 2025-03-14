@@ -2,153 +2,94 @@ import React, { useEffect, useRef, useState } from "react";
 import "./check.css";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import Papa from "papaparse";
 import Swal from "sweetalert2";
-import * as tf from "@tensorflow/tfjs";
 
 gsap.registerPlugin(ScrollTrigger);
 
 function Check() {
   const [inputValues, setInputValues] = useState("");
-  const [model, setModel] = useState(null);
-  const [isModelLoaded, setIsModelLoaded] = useState(false);
   const checkRef = useRef(null);
-
-  // Load the model or train it if it doesn't exist
-  useEffect(() => {
-    const loadOrTrainModel = async () => {
-      try {
-        // Attempt to load the model from local storage
-        const loadedModel = await tf.loadLayersModel("localstorage://sonar-model");
-        setModel(loadedModel);
-        setIsModelLoaded(true);
-        console.log("Model loaded from storage!");
-      } catch (error) {
-        console.log("No saved model found, training a new model...");
-        trainModel();
-      }
-    };
-
-    const trainModel = () => {
-      fetch("/Copy of sonar data (1).csv")
-        .then((response) => response.text())
-        .then((data) => {
-          Papa.parse(data, {
-            header: false,
-            dynamicTyping: true,
-            complete: async (result) => {
-              const csvData = result.data.filter((row) => row.length === 61); // Filter out invalid rows
-              const inputs = csvData.map((row) => row.slice(0, 60));
-              const labels = csvData.map((row) => (row[60] === "R" ? 0 : 1));
-
-              const inputTensor = tf.tensor2d(inputs);
-              const labelTensor = tf.tensor1d(labels, "int32");
-
-              // Enhanced model with deeper layers
-              const model = tf.sequential();
-              model.add(tf.layers.dense({ units: 128, activation: "relu", inputShape: [60] })); // Larger first hidden layer
-              model.add(tf.layers.dropout({ rate: 0.3 })); // Dropout to reduce overfitting
-              model.add(tf.layers.dense({ units: 64, activation: "relu" })); // Second hidden layer
-              model.add(tf.layers.dropout({ rate: 0.3 }));
-              model.add(tf.layers.dense({ units: 32, activation: "relu" })); // Third hidden layer
-              model.add(tf.layers.dense({ units: 1, activation: "sigmoid" })); // Output layer
-
-              model.compile({
-                optimizer: "adam", // Adam optimizer
-                loss: "binaryCrossentropy",
-                metrics: ["accuracy"],
-              });
-
-              // Train the model with more epochs and validation
-              model.fit(inputTensor, labelTensor, {
-                epochs: 50, // Increased epochs for better learning
-                validationSplit: 0.2, // 20% of data for validation
-                verbose: 1,
-              }).then(async () => {
-                await model.save("localstorage://sonar-model"); // Save the model
-                setModel(model);
-                setIsModelLoaded(true);
-              
-
-                // Manual test for the first row (Rock)
-                const testInput = tf.tensor2d([inputs[0]]);
-                const pred = model.predict(testInput).dataSync()[0];
-                
-              });
-            },
-          });
-        })
-        .catch((err) => {
-        
-          Swal.fire({ title: "Error loading data!", icon: "error" });
-        });
-    };
-
-    loadOrTrainModel();
-  }, []);
 
   const handleInputChange = (e) => setInputValues(e.target.value);
 
   const handlePredict = async () => {
+    if (!inputValues || inputValues.trim() === "") {
+      Swal.fire({ title: "يرجى إدخال 60 قيمة مفصولة بفواصل", icon: "error" });
+      return;
+    }
+
     const userValues = inputValues
       .split(",")
       .map((value) => parseFloat(value.trim()))
       .filter((value) => !isNaN(value));
 
     if (userValues.length !== 60) {
-      Swal.fire({ title: "Please enter 60 values separated by commas", icon: "error" });
+      Swal.fire({ title: "Please enter 60 values separated by (,)", icon: "error" });
       return;
     }
 
-    if (model && isModelLoaded) {
-      const inputTensor = tf.tensor2d([userValues]);
-      const prediction = model.predict(inputTensor).dataSync()[0];
-  
-      Swal.fire({
-        title: `${prediction < 0.6 ? "This is Rock" : "This is Mine, Be careful!"} `,
-        icon: prediction < 0.6 ? "success" : "warning",
+    // إرسال البيانات إلى الـ backend
+    try {
+      const response = await fetch("http://localhost:5000/predict", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ input_data: userValues }),
       });
-    } else {
-      Swal.fire({ title: "The model is still loading!", icon: "warning" });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        const prediction = result.prediction;
+        Swal.fire({
+          title: `${prediction === "R" ? "This is Rock" : "This is Mine, Be careful!"}`,
+          icon: prediction === "R" ? "success" : "warning",
+        });
+      } else {
+        throw new Error(result.error || "خطأ في الاتصال بالخادم");
+      }
+    } catch (error) {
+      Swal.fire({ title: "The model is still loading!", icon: "error" });
+      console.error(error);
     }
   };
 
+  // تأثيرات GSAP
   useEffect(() => {
-    if (isModelLoaded) {
-      gsap.fromTo(
-        checkRef.current,
-        { scale: 0.7, opacity: 0 },
-        {
-          scale: 1,
-          opacity: 1,
-          duration: 2,
-          ease: "elastic.out(1, 0.5)",
-          scrollTrigger: {
-            trigger: checkRef.current,
-            start: "top 80%",
-            toggleActions: "play none none reverse",
-          },
-        }
-      );
-    }
-  }, [isModelLoaded]);
+    gsap.fromTo(
+      checkRef.current,
+      { scale: 0.7, opacity: 0 },
+      {
+        scale: 1,
+        opacity: 1,
+        duration: 2,
+        ease: "elastic.out(1, 0.5)",
+        scrollTrigger: {
+          trigger: checkRef.current,
+          start: "top 80%",
+          toggleActions: "play none none reverse",
+        },
+      }
+    );
+  }, []);
 
   return (
     <>
       <div id="check" className="check" ref={checkRef}>
-        <h1>Enter Coordinates</h1>
+        <h1> Enter Coordinates</h1>
         <p>To check the safety of the coordinates</p>
         <div className="input-container">
           <input
             type="text"
-            placeholder="Enter 60 values separated by commas, then press Predict"
+            placeholder="Enter 60 values separated by (,), then press Predict"
             value={inputValues}
             onChange={handleInputChange}
           />
         </div>
-        <button onClick={handlePredict} className="btn-17" disabled={!isModelLoaded}>
+        <button onClick={handlePredict} className="btn-17">
           <span className="text-container">
-            <span className="text">{isModelLoaded ? "Predict" : "Loading..."}</span>
+            <span className="text">Predict</span>
           </span>
         </button>
       </div>
