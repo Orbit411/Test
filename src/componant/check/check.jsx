@@ -28,7 +28,6 @@ function Check() {
       return;
     }
 
-    // إرسال البيانات إلى الـ backend
     try {
       const response = await fetch("http://localhost:5000/predict", {
         method: "POST",
@@ -42,8 +41,17 @@ function Check() {
 
       if (response.ok) {
         const prediction = result.prediction;
+        const accuracy = result.accuracy;
+
+        // طباعة الدقة في وحدة التحكم في المتصفح
+        console.log(`Model Accuracy: ${(accuracy * 100).toFixed(2)}%`);
+
+        // عرض النتيجة مع الدقة في SweetAlert2
         Swal.fire({
-          title: `${prediction === "R" ? "This is Rock" : "This is Mine, Be careful!"}`,
+          title: `${
+            prediction === "R" ? "This is Rock" : "This is Mine, Be careful!"
+          }`,
+          text: `Model Accuracy: ${(accuracy * 100).toFixed(2)}%`,
           icon: prediction === "R" ? "success" : "warning",
         });
       } else {
@@ -55,7 +63,6 @@ function Check() {
     }
   };
 
-  // تأثيرات GSAP
   useEffect(() => {
     gsap.fromTo(
       checkRef.current,

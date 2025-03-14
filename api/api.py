@@ -3,10 +3,11 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score  # لقياس الدقة
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)  # للسماح بطلبات من React (Cross-Origin Resource Sharing)
+CORS(app)
 
 # تحميل البيانات وتدريب النموذج عند تشغيل التطبيق
 solar_data = pd.read_csv('Copy of sonar data (1).csv', header=None)
@@ -18,23 +19,28 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, stratif
 model = LogisticRegression()
 model.fit(X_train, y_train)
 
+# حساب دقة النموذج على بيانات الاختبار
+y_pred = model.predict(X_test)
+accuracy = accuracy_score(y_test, y_pred)
+print(f"Model Accuracy on Test Data: {accuracy:.4f}")  # طباعة الدقة عند التشغيل
+
 # مسار التنبؤ
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
-        # استقبال البيانات من React
         data = request.get_json()
-        input_data = data['input_data']  # قائمة تحتوي على 60 قيمة
+        input_data = data['input_data']
         
-        # تحويل البيانات إلى numpy array وإعادة تشكيلها
         input_data_np_array = np.asarray(input_data)
         reshaped_input = input_data_np_array.reshape(1, -1)
         
-        # التنبؤ باستخدام النموذج
         prediction = model.predict(reshaped_input)[0]
         
-        # إرجاع النتيجة كـ JSON
-        return jsonify({'prediction': prediction})
+        # إرجاع التنبؤ مع الدقة
+        return jsonify({
+            'prediction': prediction,
+            'accuracy': accuracy  # إرسال الدقة إلى الواجهة الأمامية
+        })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
